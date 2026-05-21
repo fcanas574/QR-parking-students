@@ -35,7 +35,7 @@ export default function ManualEntryScreen() {
       const { error } = await (supabase.from("access_logs") as any).insert({
         vehicle_id: vehicle.id,
         permit_id: permit?.id ?? null,
-        lot_id: permit?.lot_id,
+        lot_id: permit?.lot_id ?? "00000000-0000-0000-0000-000000000000",
         scanned_by: (profile as Record<string, unknown>)?.id,
         direction,
         method: "manual",

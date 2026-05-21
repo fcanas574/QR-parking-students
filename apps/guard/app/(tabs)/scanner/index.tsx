@@ -41,7 +41,7 @@ export default function GuardScannerScreen() {
       const { error } = await _insert("access_logs", {
         vehicle_id: (result.vehicle as Record<string, unknown>)?.id,
         permit_id: (result.permit as Record<string, unknown>)?.id ?? null,
-        lot_id: (result.permit as Record<string, unknown>)?.lot_id,
+        lot_id: (result.permit as Record<string, unknown>)?.lot_id ?? "00000000-0000-0000-0000-000000000000",
         scanned_by: (profile as Record<string, unknown>)?.id,
         direction: result.direction,
         method: result.method,

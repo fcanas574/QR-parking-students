@@ -7,6 +7,9 @@ export default function GuardTabsLayout() {
 
   if (!isReady) return null;
   if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+  if (role && role !== "security" && role !== "admin" && role !== "super_admin") {
+    return <Redirect href="/unauthorized" />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
