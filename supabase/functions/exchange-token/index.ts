@@ -41,6 +41,13 @@ const JWT_EXPIRY = "1h";
 // Helpers
 // ---------------------------------------------------------------------------
 
+class AuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
 interface TokenExchangeRequest {
   clerkToken: string;
 }
@@ -54,22 +61,21 @@ interface TokenExchangeResponse {
 
 /**
  * Verify the Clerk session token and extract the user identity.
+ * Throws AuthError for invalid/expired tokens so the handler can return 401.
  */
 async function verifyClerkToken(token: string) {
-  // @clerk/backend@^1 returns { data, errors }.  We handle both the
-  // structured error style and the throw-on-invalid style.
   const result = await clerkClient.verifyToken(token);
 
   if ("errors" in result && result.errors && result.errors.length > 0) {
     console.error("Clerk token errors:", result.errors);
-    throw new Error(
+    throw new AuthError(
       `Clerk token verification failed: ${result.errors.join(", ")}`,
     );
   }
 
   const data = "data" in result ? result.data : result;
   if (!data || !data.sub) {
-    throw new Error("Clerk token missing subject claim");
+    throw new AuthError("Clerk token missing subject claim");
   }
 
   return data;
@@ -168,9 +174,10 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("Token exchange error:", err);
     const message = err instanceof Error ? err.message : "Internal server error";
+    const status = err instanceof AuthError ? 401 : 500;
     return new Response(
       JSON.stringify({ error: message }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      { status, headers: { "Content-Type": "application/json" } },
     );
   }
 });
