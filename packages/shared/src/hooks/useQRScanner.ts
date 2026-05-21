@@ -8,10 +8,21 @@ export function useQRScanner() {
   const parseScan = useCallback((result: BarcodeScanningResult): GateTagPayload | VehicleQRPayload | null => {
     try {
       const data = JSON.parse(result.data);
-      if ("type" in data && (data.type === "entry" || data.type === "exit")) {
+      // Gate tag: passive printed tags at lot entry/exit gates
+      if (
+        typeof data.gateId === "string" &&
+        typeof data.lotId === "string" &&
+        (data.type === "entry" || data.type === "exit")
+      ) {
         return data as GateTagPayload;
       }
-      if ("hmac" in data) {
+      // Vehicle QR: driver-app-generated, HMAC-signed for tamper-proofing
+      if (
+        typeof data.vehicleId === "string" &&
+        typeof data.permitId === "string" &&
+        typeof data.timestamp === "number" &&
+        typeof data.hmac === "string"
+      ) {
         return data as VehicleQRPayload;
       }
       return null;
