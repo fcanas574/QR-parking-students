@@ -26,6 +26,7 @@ const iconMap: Record<string, string> = {
   chevron_right: "",
   nfc: "",
   emergency: "",
+  cancel: "",
 };
 
 export function MaterialSymbol({
