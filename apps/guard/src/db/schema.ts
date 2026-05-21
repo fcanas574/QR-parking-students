@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export const schema = appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: "permits_cache",
@@ -27,6 +27,7 @@ export const schema = appSchema({
         { name: "is_valid", type: "boolean" },
         { name: "scanned_at", type: "number" },
         { name: "synced", type: "boolean" },
+        { name: "retry_count", type: "number" },
       ],
     }),
   ],

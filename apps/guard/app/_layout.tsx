@@ -26,13 +26,22 @@ function AuthSyncGate() {
   const { isSignedIn } = useAuth();
   const initialSyncDone = useRef(false);
 
-  // Initial sync: pull active permits into WatermelonDB when the user signs in
+  // Initial sync: pull active permits into WatermelonDB when the user signs in.
+  // On success, mark initialSyncDone so we never retry. Also push any stale
+  // scans queued from a previous session, since NetInfo only fires on change.
   useEffect(() => {
     if (isSignedIn && !initialSyncDone.current) {
-      initialSyncDone.current = true;
-      syncEngine.initialSync().catch((err) => {
-        console.error("[SyncEngine] initialSync failed:", err);
-      });
+      syncEngine
+        .initialSync()
+        .then(() => {
+          initialSyncDone.current = true;
+        })
+        .catch((err) => {
+          console.error("[SyncEngine] initialSync failed:", err);
+        })
+        .finally(() => {
+          syncEngine.pushQueuedScans().catch(() => {});
+        });
     }
   }, [isSignedIn]);
 
