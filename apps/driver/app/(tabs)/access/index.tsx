@@ -23,6 +23,7 @@ export default function AccessScreen() {
     data: activePermit,
     isLoading,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["activePermit", profile?.id],
     queryFn: async () => {
@@ -93,9 +94,14 @@ export default function AccessScreen() {
         {isLoading ? (
           <ActivityIndicator color={colors["secondary-fixed"]} />
         ) : isError ? (
-          <Text style={styles.errorText}>
-            Could not load permit.
-          </Text>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>
+              Could not load permit.
+            </Text>
+            <Pressable onPress={() => refetch()} style={styles.retryButton}>
+              <Text style={styles.retryText}>Retry</Text>
+            </Pressable>
+          </View>
         ) : !activePermit ? (
           <Text style={styles.errorText}>
             No active permit. Purchase one in the Permits tab.
@@ -257,12 +263,27 @@ const styles = StyleSheet.create({
     color: colors["on-surface"],
     letterSpacing: 3,
   },
+  errorContainer: {
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: 16,
+  },
   errorText: {
     fontSize: 14,
     fontWeight: "600",
     color: colors["on-surface-variant"],
     textAlign: "center",
-    paddingVertical: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: colors["surface-variant"],
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors["on-surface"],
   },
   scannerArea: {
     width: 240,

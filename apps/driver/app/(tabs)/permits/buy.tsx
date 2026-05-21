@@ -165,25 +165,28 @@ export default function BuyPermitScreen() {
             </GlassPanel>
           ) : (
             lots.map((lot) => (
-              <GlassPanel
+              <Pressable
                 key={lot.id as string}
-                style={[
-                  styles.option,
-                  selectedLot === (lot.id as string) &&
-                    styles.optionSelected,
-                ]}
-                onTouchEnd={() => {
+                onPress={() => {
                   setSelectedLot(lot.id as string);
                   setStep("vehicle");
                 }}
               >
-                <Text style={styles.optionTitle}>
-                  {lot.name as string}
-                </Text>
-                <Text style={styles.optionSub}>
-                  {lot.total_spaces as number} total spaces
-                </Text>
-              </GlassPanel>
+                <GlassPanel
+                  style={[
+                    styles.option,
+                    selectedLot === (lot.id as string) &&
+                      styles.optionSelected,
+                  ]}
+                >
+                  <Text style={styles.optionTitle}>
+                    {lot.name as string}
+                  </Text>
+                  <Text style={styles.optionSub}>
+                    {lot.total_spaces as number} total spaces
+                  </Text>
+                </GlassPanel>
+              </Pressable>
             ))
           )}
         </>
@@ -222,26 +225,29 @@ export default function BuyPermitScreen() {
             </GlassPanel>
           ) : (
             vehicles.map((v) => (
-              <GlassPanel
+              <Pressable
                 key={v.id as string}
-                style={[
-                  styles.option,
-                  selectedVehicle === (v.id as string) &&
-                    styles.optionSelected,
-                ]}
-                onTouchEnd={() => {
+                onPress={() => {
                   setSelectedVehicle(v.id as string);
                   setStep("confirm");
                 }}
               >
-                <Text style={styles.optionTitle}>
-                  {v.plate_number as string}
-                </Text>
-                <Text style={styles.optionSub}>
-                  {v.make as string} {v.model as string} {"•"}{" "}
-                  {v.color as string}
-                </Text>
-              </GlassPanel>
+                <GlassPanel
+                  style={[
+                    styles.option,
+                    selectedVehicle === (v.id as string) &&
+                      styles.optionSelected,
+                  ]}
+                >
+                  <Text style={styles.optionTitle}>
+                    {v.plate_number as string}
+                  </Text>
+                  <Text style={styles.optionSub}>
+                    {v.make as string} {v.model as string} {"•"}{" "}
+                    {v.color as string}
+                  </Text>
+                </GlassPanel>
+              </Pressable>
             ))
           )}
         </>
