@@ -155,6 +155,7 @@ Deno.serve(async (req: Request) => {
     })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject(clerkId)
+      .setAudience("authenticated")
       .setIssuer(JWT_ISSUER)
       .setIssuedAt()
       .setExpirationTime(JWT_EXPIRY)
@@ -173,8 +174,10 @@ Deno.serve(async (req: Request) => {
     });
   } catch (err) {
     console.error("Token exchange error:", err);
-    const message = err instanceof Error ? err.message : "Internal server error";
     const status = err instanceof AuthError ? 401 : 500;
+    const message = status === 401
+      ? err instanceof Error ? err.message : "Invalid token"
+      : "Internal server error";
     return new Response(
       JSON.stringify({ error: message }),
       { status, headers: { "Content-Type": "application/json" } },
