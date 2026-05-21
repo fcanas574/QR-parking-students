@@ -18,8 +18,8 @@ export default function GuardScannerScreen() {
     if (scanning) {
       const anim = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1250, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0, duration: 1250, useNativeDriver: true }),
         ])
       );
       anim.start();
@@ -28,8 +28,8 @@ export default function GuardScannerScreen() {
   }, [scanning]);
 
   const scale = pulseAnim.interpolate({
-    inputRange: [0, 0.7, 1],
-    outputRange: [0.95, 1, 0.95],
+    inputRange: [0, 1],
+    outputRange: [0.95, 1],
   });
 
   // Helper to cast supabase insert payloads since Database types are stubs
@@ -60,53 +60,63 @@ export default function GuardScannerScreen() {
 
   const handleSimulatedScan = async (direction: "entry" | "exit") => {
     setScanning(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      await new Promise((r) => setTimeout(r, 1500));
 
-    const { data: vehicle } = await supabase
-      .from("vehicles")
-      .select("*, profiles(full_name)")
-      .eq("plate_number", "XYZ-9876")
-      .single();
+      const { data: vehicle } = await supabase
+        .from("vehicles")
+        .select("*, profiles(full_name)")
+        .eq("plate_number", "XYZ-9876")
+        .maybeSingle();
 
-    // Cast to Record since Database types are stubs
-    const v = vehicle as Record<string, unknown> | null;
+      const v = vehicle as Record<string, unknown> | null;
 
-    if (!v) {
+      if (!v) {
+        setScanResult({
+          vehicle: null,
+          permit: null,
+          isValid: false,
+          reason: "Vehicle not found in system",
+          direction,
+          method: "qr",
+        });
+        return;
+      }
+
+      const { data: permitRow } = await supabase
+        .from("permits")
+        .select("*")
+        .eq("vehicle_id", v.id as string)
+        .eq("status", "active")
+        .maybeSingle();
+
+      const p = permitRow as Record<string, unknown> | null;
+
+      const result: ScanResult = {
+        vehicle: v as ScanResult["vehicle"],
+        permit: p as ScanResult["permit"],
+        isValid: !!p,
+        reason: p ? undefined : "No active permit",
+        direction,
+        method: "qr",
+      };
+
+      setScanResult(result);
+
+      if (result.isValid) {
+        logScan.mutate(result);
+      }
+    } catch (err) {
       setScanResult({
         vehicle: null,
         permit: null,
         isValid: false,
-        reason: "Vehicle not found in system",
+        reason: "Scan failed. Try again.",
         direction,
         method: "qr",
       });
+    } finally {
       setScanning(false);
-      return;
-    }
-
-    const { data: permitRow } = await supabase
-      .from("permits")
-      .select("*")
-      .eq("vehicle_id", v.id as string)
-      .eq("status", "active")
-      .single();
-
-    const p = permitRow as Record<string, unknown> | null;
-
-    const result: ScanResult = {
-      vehicle: v as ScanResult["vehicle"],
-      permit: p as ScanResult["permit"],
-      isValid: !!p,
-      reason: p ? undefined : "No active permit",
-      direction,
-      method: "qr",
-    };
-
-    setScanResult(result);
-    setScanning(false);
-
-    if (result.isValid) {
-      logScan.mutate(result);
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { Alert } from "react-native";
 import { router } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { GlassPanel, colors, spacing } from "@parking/shared";
@@ -18,7 +19,7 @@ export default function ManualEntryScreen() {
         .from("vehicles")
         .select("id")
         .eq("plate_number", plate.toUpperCase())
-        .single();
+        .maybeSingle();
 
       const vehicle = vehicleRow as Record<string, unknown> | null;
       if (!vehicle) throw new Error("Vehicle not found");
@@ -28,7 +29,7 @@ export default function ManualEntryScreen() {
         .select("id, lot_id")
         .eq("vehicle_id", vehicle.id as string)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       const permit = permitRow as Record<string, unknown> | null;
 
@@ -47,6 +48,9 @@ export default function ManualEntryScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accessLogs"] });
       router.back();
+    },
+    onError: (err: Error) => {
+      Alert.alert("Error", err.message || "Failed to log entry.");
     },
   });
 
