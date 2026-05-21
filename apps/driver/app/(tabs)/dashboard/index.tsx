@@ -9,7 +9,11 @@ import type { Permit, LotOccupancy } from "@parking/shared";
 export default function DashboardScreen() {
   const { profile } = useAuth();
 
-  const { data: permit } = useQuery({
+  const {
+    data: permit,
+    isLoading: permitLoading,
+    isError: permitError,
+  } = useQuery({
     queryKey: ["activePermit", profile?.id],
     queryFn: async () => {
       const { data } = await supabase
@@ -28,7 +32,11 @@ export default function DashboardScreen() {
     enabled: !!profile?.id,
   });
 
-  const { data: occupancies } = useQuery({
+  const {
+    data: occupancies,
+    isLoading: occLoading,
+    isError: occError,
+  } = useQuery({
     queryKey: ["lotOccupancy"],
     queryFn: async () => {
       const { data } = await supabase
@@ -44,7 +52,12 @@ export default function DashboardScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Active Permit Hero */}
       <GlassPanel glow style={styles.heroPanel}>
-        <View style={styles.heroRow}>
+        {permitLoading ? (
+          <Text style={styles.skeletonText}>Loading permit...</Text>
+        ) : permitError ? (
+          <Text style={styles.errorText}>Failed to load permit</Text>
+        ) : (
+          <View style={styles.heroRow}>
           <View>
             <View style={styles.verifiedRow}>
               <MaterialSymbol
@@ -72,6 +85,7 @@ export default function DashboardScreen() {
             <Text style={styles.statusText}>Valid</Text>
           </View>
         </View>
+        )}
       </GlassPanel>
 
       {/* Current Parked Location */}
@@ -110,37 +124,43 @@ export default function DashboardScreen() {
           />
           <Text style={styles.sectionLabel}>Campus Trends</Text>
         </View>
-        {occupancies?.map((occ) => {
-          const pct = occ.parking_lots?.total_spaces
-            ? Math.round(
-                ((occ.current_count as number) / occ.parking_lots.total_spaces) * 100
-              )
-            : 0;
-          const barColor = pct > 90 ? colors.error : colors["secondary-fixed"];
-          return (
-            <View key={occ.lot_id as string} style={styles.statBar}>
-              <View style={styles.statLabelRow}>
-                <Text style={styles.statLabel}>
-                  {occ.parking_lots?.name ?? "Unknown"}
-                </Text>
-                <Text style={[styles.statPct, { color: barColor }]}>
-                  {pct}% Full
-                </Text>
+        {occLoading ? (
+          <Text style={styles.skeletonText}>Loading occupancy...</Text>
+        ) : occError ? (
+          <Text style={styles.errorText}>Failed to load occupancy</Text>
+        ) : (
+          occupancies?.map((occ) => {
+            const pct = occ.parking_lots?.total_spaces
+              ? Math.round(
+                  ((occ.current_count as number) / occ.parking_lots.total_spaces) * 100
+                )
+              : 0;
+            const barColor = pct > 90 ? colors.error : colors["secondary-fixed"];
+            return (
+              <View key={occ.lot_id as string} style={styles.statBar}>
+                <View style={styles.statLabelRow}>
+                  <Text style={styles.statLabel}>
+                    {occ.parking_lots?.name ?? "Unknown"}
+                  </Text>
+                  <Text style={[styles.statPct, { color: barColor }]}>
+                    {pct}% Full
+                  </Text>
+                </View>
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: `${pct}%` as const,
+                        backgroundColor: barColor,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${pct}%` as any,
-                      backgroundColor: barColor,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-          );
-        })}
+            );
+          })
+        )}
       </GlassPanel>
     </ScrollView>
   );
@@ -152,6 +172,16 @@ const styles = StyleSheet.create({
     padding: spacing["margin-mobile"],
     paddingBottom: 100,
     gap: spacing.md,
+  },
+  skeletonText: {
+    fontSize: 14,
+    color: colors["on-surface-variant"],
+    padding: spacing.sm,
+  },
+  errorText: {
+    fontSize: 14,
+    color: colors.error,
+    padding: spacing.sm,
   },
   heroPanel: { overflow: "hidden" },
   heroRow: {

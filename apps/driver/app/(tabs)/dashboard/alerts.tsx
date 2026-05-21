@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { GlassPanel, MaterialSymbol, colors, spacing } from "@parking/shared";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@parking/shared";
 
 export default function AlertsScreen() {
   const { data: alerts } = useQuery({
