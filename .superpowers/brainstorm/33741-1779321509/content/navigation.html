@@ -1,0 +1,94 @@
+<h2>Navigation & Screen Map</h2>
+<p class="subtitle">Expo Router file-based routing with (auth) group for protected screens</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Driver App (Students &amp; Staff)</div>
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 12px; line-height: 1.7; color: #e2e2e8;">
+<span style="color: #849495;">(auth)</span>
+├── sign-in/           <span style="color: #7df4ff;">Clerk hosted</span>
+└── sign-up/           <span style="color: #7df4ff;">Clerk hosted</span>
+
+<span style="color: #849495;">(tabs)</span>
+├── <span style="color: #36ffc4;">dashboard/</span>          <span style="color: #849495;">← Tab 1: "Status"</span>
+│   ├── index          <span style="color: #849495;">Active permit hero</span>
+│   │                   <span style="color: #849495;">Current parked location</span>
+│   │                   <span style="color: #849495;">Campus lot capacity bars</span>
+│   └── alerts         <span style="color: #849495;">System notifications</span>
+│
+├── <span style="color: #36ffc4;">map/</span>                <span style="color: #849495;">← Tab 2: "Map"</span>
+│   ├── index          <span style="color: #849495;">Interactive campus map</span>
+│   │                   <span style="color: #849495;">Lot markers with occupancy</span>
+│   │                   <span style="color: #849495;">Color-coded: green/yellow/red</span>
+│   └── [lot]          <span style="color: #849495;">Lot detail sheet</span>
+│
+├── <span style="color: #36ffc4;">permits/</span>            <span style="color: #849495;">← Tab 3: "Permits"</span>
+│   ├── index          <span style="color: #849495;">Permit list (active + history)</span>
+│   ├── buy            <span style="color: #849495;">Select lot → vehicle → pay</span>
+│   └── [id]           <span style="color: #849495;">Permit detail, renew, cancel</span>
+│
+├── <span style="color: #36ffc4;">access/</span>             <span style="color: #849495;">← Tab 4: "Access" (active)</span>
+│   └── index          <span style="color: #849495;">NFC/QR scanner + Tap to Enter</span>
+│                       <span style="color: #849495;">Animated HUD with license plate</span>
+│
+└── vehicle/           <span style="color: #849495;">Add/edit vehicles, plate photos</span>
+      </pre>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Guard App (Security)</div>
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 12px; line-height: 1.7; color: #e2e2e8;">
+<span style="color: #849495;">(auth)</span>
+├── sign-in/           <span style="color: #7df4ff;">Clerk hosted</span>
+└── sign-up/           <span style="color: #7df4ff;">Invite-only (admin creates)</span>
+
+<span style="color: #849495;">(tabs)</span>
+├── <span style="color: #36ffc4;">scanner/</span>            <span style="color: #849495;">← Tab 1: "Scan" (active)</span>
+│   ├── index          <span style="color: #849495;">NFC/QR reader for entry/exit</span>
+│   │                   <span style="color: #849495;">Shows: plate, permit status, </span>
+│   │                   <span style="color: #849495;">valid/invalid, lot occupancy</span>
+│   └── manual         <span style="color: #849495;">Fallback manual plate entry</span>
+│
+├── <span style="color: #36ffc4;">dashboard/</span>          <span style="color: #849495;">← Tab 2: "Status"</span>
+│   ├── index          <span style="color: #849495;">Today's scan count, current</span>
+│   │                   <span style="color: #849495;">lot occupancy, sync queue</span>
+│   └── alerts         <span style="color: #849495;">Capacity alerts, anomalies</span>
+│
+├── <span style="color: #36ffc4;">map/</span>                <span style="color: #849495;">← Tab 3: "Map"</span>
+│   └── index          <span style="color: #849495;">Same map as driver, with</span>
+│                        <span style="color: #849495;">override controls for capacity</span>
+│
+└── history/           <span style="color: #849495;">← Tab 4: "Log"</span>
+    └── index          <span style="color: #849495;">Searchable scan history,</span>
+                        <span style="color: #849495;">filter by date/lot/direction</span>
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Navigation Behavior</h3>
+  <div class="options">
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Auth Gate</h3>
+        <p>If no Clerk session → redirect to sign-in. If signed in but no profile → create profile via Edge Function. If role mismatch → show error (guards can't open driver app).</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Bottom Tabs</h3>
+        <p>4 tabs each app. Active tab uses filled icon variant + container highlight + glow shadow. Inactive tabs use outlined variant at 60% opacity.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Top App Bar</h3>
+        <p>Shared component: avatar (left), centered "UniPark" brand mark, notification bell with indicator dot (right). Glassmorphism backdrop-blur on both apps.</p>
+      </div>
+    </div>
+  </div>
+</div>

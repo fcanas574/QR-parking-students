@@ -1,0 +1,101 @@
+<h2>System Architecture</h2>
+<p class="subtitle">Monorepo with two Expo apps sharing a common package, all backed by Supabase</p>
+
+<div class="section">
+  <h3>Repo Structure</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.6; color: #e2e2e8;">
+parking-monorepo/
+│
+├── apps/
+│   ├── <span style="color: #7df4ff;">driver/</span>                    <span style="color: #849495;">← Students &amp; Staff</span>
+│   │   ├── app/                   <span style="color: #849495;">Expo Router (file-based)</span>
+│   │   │   ├── (auth)/            <span style="color: #849495;">Clerk sign-in/up screens</span>
+│   │   │   ├── (tabs)/            <span style="color: #849495;">Bottom tab navigator</span>
+│   │   │   │   ├── dashboard/     <span style="color: #849495;">Permit status, stats</span>
+│   │   │   │   ├── map/           <span style="color: #849495;">Parking availability map</span>
+│   │   │   │   └── access/        <span style="color: #849495;">NFC/QR gate scanner</span>
+│   │   │   ├── permits/           <span style="color: #849495;">Buy &amp; manage permits</span>
+│   │   │   └── vehicle/           <span style="color: #849495;">Register/edit vehicles</span>
+│   │   └── ...
+│   │
+│   ├── <span style="color: #36ffc4;">guard/</span>                    <span style="color: #849495;">← Security</span>
+│   │   ├── app/
+│   │   │   ├── (auth)/
+│   │   │   ├── (tabs)/
+│   │   │   │   ├── scanner/       <span style="color: #849495;">NFC/QR entrance &amp; exit logger</span>
+│   │   │   │   ├── dashboard/     <span style="color: #849495;">Live capacity, recent scans</span>
+│   │   │   │   └── map/           <span style="color: #849495;">Lot availability overlay</span>
+│   │   │   └── history/           <span style="color: #849495;">Scan log, reports</span>
+│   │   └── ...
+│   │
+│   └── <span style="color: #d1bcff;">admin-web/</span>                <span style="color: #849495;">← Next project (Next.js)</span>
+│
+├── packages/
+│   └── <span style="color: #00e1ab;">shared/</span>                    <span style="color: #849495;">Design system &amp; business logic</span>
+│       ├── ui/                    <span style="color: #849495;">Components (Button, Card, ScannerRing...)</span>
+│       ├── hooks/                 <span style="color: #849495;">useSupabase, useAuth, useNFC...</span>
+│       ├── lib/                   <span style="color: #849495;">Supabase client, types, constants</span>
+│       └── design/                <span style="color: #849495;">Design tokens (colors, spacing, fonts)</span>
+│
+├── supabase/
+│   └── migrations/                <span style="color: #849495;">Database schema, RLS policies</span>
+│
+└── turbo.json
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Key Architecture Decisions</h3>
+  <div class="options">
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Expo Router</h3>
+        <p>File-based routing with typed routes. (auth) and (tabs) groups for auth-gated navigation. Deep linking for push notifications.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Clerk → Supabase JWT bridge</h3>
+        <p>Clerk handles OAuth/SAML UI and user profiles. On sign-in, a Clerk JWT is exchanged for a Supabase session via a custom function, enabling RLS.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>TanStack Query (Driver) + WatermelonDB (Guard)</h3>
+        <p>Driver app uses React Query for server state with optimistic updates. Guard app adds WatermelonDB for offline permit cache and a sync queue.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Zustand for ephemeral UI state</h3>
+        <p>Scanner animation state, map viewport position, selected filters — nothing that should survive app restart.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>External Services</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #7df4ff; margin: 0 0 4px;">Clerk</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">Auth UI, user profiles, role claims in JWT metadata</p>
+    </div>
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #36ffc4; margin: 0 0 4px;">Supabase</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">PostgreSQL DB, RLS, real-time subscriptions, Edge Functions</p>
+    </div>
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #d1bcff; margin: 0 0 4px;">Expo</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">EAS Build for dev/prod builds, Expo Go for quick iteration</p>
+    </div>
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #ffb4ab; margin: 0 0 4px;">Payment (stubbed)</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">Swappable module, currently placeholder, future Stripe-alternative</p>
+    </div>
+  </div>
+</div>

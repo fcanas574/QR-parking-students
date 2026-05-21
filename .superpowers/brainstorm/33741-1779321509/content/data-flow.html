@@ -1,0 +1,124 @@
+<h2>Data Flow & State Management</h2>
+<p class="subtitle">How data moves from Supabase to the UI, and how mutations flow back</p>
+
+<div class="section">
+  <h3>Driver App — Online-First Data Flow</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.8; color: #e2e2e8;">
+┌─────────────────────────────────────────────────┐
+│  <span style="color: #7df4ff;">UI Layer</span> (Expo Router screens)                │
+│  Reads from hooks, dispatches mutations          │
+└──────────┬────────────────────┬─────────────────┘
+           │                    │
+    <span style="color: #36ffc4;">useQuery</span>              <span style="color: #d1bcff;">useMutation</span>
+    (TanStack)             (TanStack)
+           │                    │
+           ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐
+│  <span style="color: #7df4ff;">Query Cache</span>     │  │  <span style="color: #d1bcff;">Optimistic Update</span> │
+│  Stale: 30s       │  │  Rollback on err   │
+│  GC: 5min         │  │  Invalidate query   │
+└────────┬─────────┘  └────────┬─────────┘
+         │                     │
+         ▼                     ▼
+┌─────────────────────────────────────────────────┐
+│  <span style="color: #36ffc4;">packages/shared/lib/supabase.ts</span>                │
+│  Single Supabase client instance                 │
+│  Clerk JWT → custom JWT → Supabase session       │
+└────────────────────┬────────────────────────────┘
+                     │
+                     ▼
+         ┌─────────────────────┐
+         │  <span style="color: #00e1ab;">Supabase</span>             │
+         │  PostgreSQL + RLS    │
+         │  Real-time via WS    │
+         └─────────────────────┘
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Guard App — Offline-First Data Flow</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.8; color: #e2e2e8;">
+┌─────────────────────────────────────────────────┐
+│  <span style="color: #36ffc4;">UI Layer</span>                                     │
+│  Scanner → plate lookup → permit validation      │
+└──────────┬──────────────────────────────────────┘
+           │
+    ┌──────┴──────┐
+    ▼             ▼
+┌──────────┐ ┌──────────────────┐
+│ <span style="color: #7df4ff;">WatermelonDB</span>│ │ <span style="color: #7df4ff;">TanStack Query</span>   │
+│ (local)  │ │ (when online)    │
+│          │ │                  │
+│ <span style="color: #849495;">Permits</span>  │ │ <span style="color: #849495;">Fresh data from</span>  │
+│ <span style="color: #849495;">cache</span>    │ │ <span style="color: #849495;">Supabase</span>         │
+│          │ │                  │
+│ <span style="color: #849495;">Scan</span>      │ │                  │
+│ <span style="color: #849495;">queue</span>     │ │                  │
+└────┬─────┘ └────────┬─────────┘
+     │                │
+     │         ┌──────┴──────┐
+     │         ▼             ▼
+     │  ┌─────────────────────────┐
+     │  │ <span style="color: #36ffc4;">Sync Engine</span>              │
+     │  │ 1. Detect connectivity    │
+     │  │ 2. Push queued scans      │
+     │  │ 3. Pull updated permits   │
+     │  │ 4. Merge conflicts        │
+     │  │ 5. Update WatermelonDB    │
+     │  └──────────┬──────────────┘
+     │             │
+     ▼             ▼
+┌─────────────────────────────────────────────────┐
+│  <span style="color: #36ffc4;">shared/lib/supabase.ts</span>  +  <span style="color: #36ffc4;">shared/lib/sync.ts</span>    │
+└────────────────────┬────────────────────────────┘
+                     │
+                     ▼
+         ┌─────────────────────┐
+         │  <span style="color: #00e1ab;">Supabase</span>             │
+         └─────────────────────┘
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Real-time Subscriptions</h3>
+  <div class="options">
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>lot_occupancy changes</h3>
+        <p>Both apps subscribe to occupancy updates via Supabase Realtime. Map markers and capacity bars update live without polling.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Scan-to-display latency</h3>
+        <p>Guard scans → local WatermelonDB insert → optimistic UI update → sync queue → Supabase → occupancy trigger fires → Realtime broadcast → all apps update.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Auth Token Flow</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.8; color: #e2e2e8;">
+  1. Clerk.signIn() → Clerk session + JWT
+  2. Clerk JWT sent to Supabase Edge Function "exchange-token"
+  3. Edge Function validates Clerk JWT, extracts role from metadata
+  4. Edge Function calls supabase.auth.admin.generateLink() → Supabase session
+  5. Client receives Supabase access_token + refresh_token
+  6. All subsequent Supabase calls use this session → RLS policies apply
+
+  <span style="color: #849495;">On token expiry: Clerk refresh → re-run exchange silently</span>
+      </pre>
+    </div>
+  </div>
+</div>

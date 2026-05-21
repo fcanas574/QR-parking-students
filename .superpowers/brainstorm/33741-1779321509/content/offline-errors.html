@@ -1,0 +1,97 @@
+<h2>Offline Strategy & Error Handling</h2>
+<p class="subtitle">Guard app resilience and error states across both apps</p>
+
+<div class="section">
+  <h3>Guard App — Offline Scanning</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.8; color: #e2e2e8;">
+<span style="color: #849495;">INITIAL SYNC (at sign-in)</span>
+   ├── Pull all active permits → WatermelonDB
+   ├── Pull all parking_lots → WatermelonDB
+   ├── Pull last 7 days of access_logs → for reference
+   └── Store sync timestamp
+
+<span style="color: #849495;">SCAN FLOW (offline)</span>
+   ├── Guard taps "Scan" or phone detects NFC tag
+   ├── Read plate/vehicle ID from NFC/QR
+   ├── Lookup vehicle in local WatermelonDB → get associated permit
+   ├── Validate: permit active? correct lot? not already inside?
+   ├── Show result: ✓ VALID or ✗ DENIED with reason
+   ├── Insert access_log row locally (synced_at = NULL)
+   ├── Increment local lot_occupancy count
+   └── Push to sync queue
+
+<span style="color: #849495;">SYNC ENGINE (on connectivity restored)</span>
+   ├── 1. Push queued access_logs (oldest first)
+   ├── 2. On conflict (two guards scanned same vehicle):
+   │     timestamp wins, later scan gets warning
+   ├── 3. Pull fresh permits (new purchases, expirations)
+   ├── 4. Pull current lot_occupancy from server
+   ├── 5. Reconcile local counts with server
+   └── 6. Update UI
+
+<span style="color: #849495;">CONNECTIVITY INDICATOR</span>
+   ├── Green dot + "Online" — live connection
+   ├── Amber dot + "Offline · 12 queued" — syncing later
+   └── Red dot + "Sync failed · 3 pending" — manual retry needed
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Error States — Both Apps</h3>
+  <div class="options">
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Network Errors</h3>
+        <p><strong>Driver:</strong> TanStack Query retries 3x with exponential backoff, shows skeleton + "Can't reach server" toast after final failure.<br>
+        <strong>Guard:</strong> Falls back to WatermelonDB. Banner shows sync queue count. No data loss.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Auth Errors</h3>
+        <p>Clerk session expired → redirect to sign-in. Supabase token expired → silent re-exchange via Edge Function. Role mismatch → "This account doesn't have access to this app" screen with sign-out button.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Scan Errors</h3>
+        <p><strong>Invalid QR/NFC:</strong> Red ring animation + "Invalid tag. Try again or enter manually."<br>
+        <strong>Expired permit:</strong> Yellow ring + "Permit expired — {date}. Contact parking office."<br>
+        <strong>Wrong lot:</strong> "Vehicle XYZ-9876 not authorized for Lot C. Valid for: Lot B."<br>
+        <strong>Duplicate scan:</strong> "Vehicle already logged as {entry/exit}. Override?"</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Payment Errors (Driver)</h3>
+        <p>Payment module stubbed → "Payment processing coming soon" screen. Payment declined → "Unable to process. Try again or contact parking office." No permit created until payment confirmed.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Edge Cases</h3>
+  <div class="split">
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #ffb4ab; margin: 0 0 8px;">Concurrent scans</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">Two guards scan same vehicle at different gates. Server resolves by timestamp. Both see confirmation. Occupancy reconciled server-side.</p>
+    </div>
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #ffb4ab; margin: 0 0 8px;">Ghost occupancy</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">Vehicle exits without scan (manual override, hardware failure). Lot occupancy drifts. Admin can manually correct counts in web dashboard.</p>
+    </div>
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #ffb4ab; margin: 0 0 8px;">Multi-vehicle permit</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">One permit, multiple registered vehicles? One vehicle active at a time. Scanning a second vehicle while first is "inside" → denied.</p>
+    </div>
+    <div style="background: var(--surface-container); padding: 16px; border-radius: 8px; border: 1px solid var(--outline-variant);">
+      <h4 style="color: #ffb4ab; margin: 0 0 8px;">Plate change</h4>
+      <p style="margin: 0; font-size: 14px; color: var(--on-surface-variant);">Student changes plates → must re-verify vehicle. Old plate invalidated. New plate linked to existing permit after verification.</p>
+    </div>
+  </div>
+</div>

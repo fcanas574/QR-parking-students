@@ -1,0 +1,114 @@
+<h2>Data Model — Supabase Schema</h2>
+<p class="subtitle">Core tables with Row Level Security enabled, Clerk user IDs as the foreign key anchor</p>
+
+<div class="section">
+  <h3>Users & Profiles</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.8; color: #e2e2e8;">
+<span style="color: #7df4ff;">profiles</span>                         <span style="color: #849495;">← created on first Clerk sign-in via trigger</span>
+├── id: uuid (PK)
+├── <span style="color: #7df4ff;">clerk_id: text (UNIQUE)</span>         <span style="color: #849495;">← links to Clerk user</span>
+├── full_name: text
+├── <span style="color: #36ffc4;">role: enum(student, staff, security, admin, super_admin)</span>
+├── email: text
+├── phone: text
+├── avatar_url: text
+└── created_at: timestamptz
+
+<span style="color: #7df4ff;">vehicles</span>
+├── id: uuid (PK)
+├── <span style="color: #7df4ff;">profile_id: uuid (FK → profiles)</span>
+├── plate_number: text (UNIQUE)
+├── make: text
+├── model: text
+├── color: text
+├── is_verified: boolean
+└── created_at: timestamptz
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Parking Lots & Permits</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.8; color: #e2e2e8;">
+<span style="color: #36ffc4;">parking_lots</span>
+├── id: uuid (PK)
+├── name: text                    <span style="color: #849495;">← "Lot A", "Lot C", "Visitor Lot V"</span>
+├── total_spaces: int
+├── location: geography(POINT)    <span style="color: #849495;">← for map display</span>
+├── is_active: boolean
+└── created_at: timestamptz
+
+<span style="color: #36ffc4;">permits</span>
+├── id: uuid (PK)
+├── <span style="color: #7df4ff;">profile_id: uuid (FK → profiles)</span>
+├── <span style="color: #7df4ff;">vehicle_id: uuid (FK → vehicles)</span>
+├── <span style="color: #7df4ff;">lot_id: uuid (FK → parking_lots)</span>
+├── status: enum(active, expired, suspended, pending_approval)
+├── starts_at: timestamptz
+├── expires_at: timestamptz
+├── payment_status: enum(paid, unpaid, waived)
+├── payment_id: text              <span style="color: #849495;">← external payment ref (stubbed)</span>
+├── auto_renew: boolean
+└── created_at: timestamptz
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Access Logs & Capacities</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <pre style="font-family: monospace; font-size: 13px; line-height: 1.8; color: #e2e2e8;">
+<span style="color: #d1bcff;">access_logs</span>
+├── id: uuid (PK)
+├── <span style="color: #7df4ff;">permit_id: uuid (FK → permits, nullable)</span>
+├── <span style="color: #7df4ff;">vehicle_id: uuid (FK → vehicles)</span>
+├── <span style="color: #7df4ff;">lot_id: uuid (FK → parking_lots)</span>
+├── <span style="color: #7df4ff;">scanned_by: uuid (FK → profiles)</span>  <span style="color: #849495;">← security guard who scanned</span>
+├── direction: enum(entry, exit)
+├── method: enum(nfc, qr, manual)
+├── is_valid: boolean              <span style="color: #849495;">← was permit active at scan time?</span>
+├── scanned_at: timestamptz
+└── synced_at: timestamptz         <span style="color: #849495;">← NULL until offline sync completes</span>
+
+<span style="color: #d1bcff;">lot_occupancy</span>                   <span style="color: #849495;">← materialized-ish: updated by trigger on access_logs</span>
+├── id: uuid (PK)
+├── <span style="color: #7df4ff;">lot_id: uuid (FK → parking_lots)</span>
+├── current_count: int
+├── capacity: int
+├── last_updated: timestamptz
+└── CONSTRAINT one_row_per_lot UNIQUE (lot_id)
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>RLS Policy Summary</h3>
+  <div class="options">
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Students & Staff</h3>
+        <p>Read own profile and permits. Insert/update own vehicles. Read all parking_lots. Read own access_logs. Read lot_occupancy.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Security</h3>
+        <p>Read all profiles (plate lookup). Insert access_logs (entrance/exit). Read all permits (validation). Read/write lot_occupancy.</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default; border-color: #36ffc44d;">
+      <div class="content">
+        <h3>Admin & Super Admin</h3>
+        <p>Full CRUD on permits, parking_lots, vehicles. Read all access_logs. Approve/reject permits. Web app only (not mobile).</p>
+      </div>
+    </div>
+  </div>
+</div>
