@@ -140,19 +140,32 @@ You'll also need the **JWT template** for Supabase:
 - `security` — can access the Guard app and scan QR codes
 - `admin` / `super_admin` — full access
 
-### 3. Configure Supabase secrets
+### 3. Export secrets for Supabase
 
-Create `supabase/.env.local` with the Clerk secret key and JWT signing secret:
+The `config.toml` uses `env(...)` to inject secrets into the edge runtime. These must be **exported in your shell** before starting Supabase — `supabase/.env.local` does **not** work for local edge functions.
 
 ```bash
-# supabase/.env.local
-CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
-SUPABASE_AUTH_JWT_SECRET=your_jwt_signing_secret_min_32_chars
+export CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
+export SUPABASE_AUTH_JWT_SECRET=your_jwt_signing_secret_min_32_chars
+```
+
+To persist these across terminal sessions, add them to your shell profile:
+
+```bash
+# ~/.zshrc (or ~/.bashrc)
+export CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
+export SUPABASE_AUTH_JWT_SECRET=your_jwt_signing_secret_min_32_chars
+```
+
+Then reload:
+
+```bash
+source ~/.zshrc
 ```
 
 These are referenced by `config.toml` under `[edge_runtime.secrets]` and injected into the `exchange-token` edge function at runtime.
 
-> **Note:** `supabase/.env.local` is gitignored — never commit secrets.
+> **Important:** Never commit secrets to git. Confirm they only exist in your shell profile and `.env` files (all of which are gitignored).
 
 ### 4. Create app `.env` files
 
@@ -181,9 +194,9 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...             # from `supabase start` 
 | `EXPO_PUBLIC_SUPABASE_URL` | `supabase start` output (API URL) |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `supabase start` output (anon key) |
 
-### 5. Restart Supabase with secrets
+### 5. Start Supabase with secrets
 
-After creating `supabase/.env.local`, restart so the edge function picks up the secrets:
+With the secrets exported, start (or restart) Supabase so the edge function picks them up:
 
 ```bash
 supabase stop
