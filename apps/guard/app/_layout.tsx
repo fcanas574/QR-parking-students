@@ -1,7 +1,11 @@
-import { ClerkProvider } from "@clerk/clerk-expo";
+import { useEffect, useRef } from "react";
+import { AppState, type AppStateStatus } from "react-native";
+import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import NetInfo from "@react-native-community/netinfo";
 import * as SecureStore from "expo-secure-store";
+import { syncEngine } from "../src/sync/syncEngine";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +22,54 @@ const tokenCache = {
   },
 };
 
+function AuthSyncGate() {
+  const { isSignedIn } = useAuth();
+  const initialSyncDone = useRef(false);
+
+  // Initial sync: pull active permits into WatermelonDB when the user signs in
+  useEffect(() => {
+    if (isSignedIn && !initialSyncDone.current) {
+      initialSyncDone.current = true;
+      syncEngine.initialSync().catch((err) => {
+        console.error("[SyncEngine] initialSync failed:", err);
+      });
+    }
+  }, [isSignedIn]);
+
+  // Connectivity listener: push queued scans when the network comes back
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && isSignedIn) {
+        syncEngine.pushQueuedScans().catch((err) => {
+          console.error("[SyncEngine] pushQueuedScans failed:", err);
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isSignedIn]);
+
+  // AppState listener: attempt push when app returns to foreground
+  useEffect(() => {
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === "active" && isSignedIn) {
+        syncEngine.pushQueuedScans().catch((err) => {
+          console.error("[SyncEngine] foreground push failed:", err);
+        });
+      }
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
+    return () => subscription.remove();
+  }, [isSignedIn]);
+
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <ClerkProvider
@@ -25,6 +77,7 @@ export default function RootLayout() {
       tokenCache={tokenCache}
     >
       <QueryClientProvider client={queryClient}>
+        <AuthSyncGate />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
