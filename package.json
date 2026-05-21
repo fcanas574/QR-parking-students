@@ -1,0 +1,13 @@
+{
+  "name": "parking-monorepo",
+  "private": true,
+  "scripts": {
+    "dev:driver": "pnpm --filter @parking/driver start",
+    "dev:guard": "pnpm --filter @parking/guard start",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
