@@ -6,7 +6,7 @@ const config = getDefaultConfig(__dirname);
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName === '@expo/metro-runtime/error-overlay') {
     return {
-      filePath: path.resolve(__dirname, '../../shims/error-overlay.js'),
+      filePath: path.resolve(__dirname, 'shims/error-overlay.js'),
       type: 'sourceFile',
     };
   }
