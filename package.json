@@ -7,7 +7,11 @@
     "build": "turbo run build",
     "lint": "turbo run lint"
   },
+  "packageManager": "pnpm@10.4.1",
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
   }
 }
