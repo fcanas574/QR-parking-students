@@ -2,4 +2,5 @@
 export * from './design/tokens';
 export * from './types';
 export * from './types/database';
+export * from './types/navigation';
 export * from './lib';

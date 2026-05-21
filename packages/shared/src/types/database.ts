@@ -10,5 +10,9 @@ export interface Database {
       access_logs: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> };
       lot_occupancy: { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

@@ -1,29 +1,64 @@
-// Shared types across driver and guard apps
+import type { Database } from "./database";
 
-/** User role in the parking system */
-export type UserRole = 'driver' | 'guard';
+// Row types from Supabase schema
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"];
+export type ParkingLot = Database["public"]["Tables"]["parking_lots"]["Row"];
+export type Permit = Database["public"]["Tables"]["permits"]["Row"];
+export type AccessLog = Database["public"]["Tables"]["access_logs"]["Row"];
+export type LotOccupancy = Database["public"]["Tables"]["lot_occupancy"]["Row"];
 
-/** Parking session status */
-export type SessionStatus = 'active' | 'completed' | 'cancelled';
+// Insert types
+export type VehicleInsert = Database["public"]["Tables"]["vehicles"]["Insert"];
+export type PermitInsert = Database["public"]["Tables"]["permits"]["Insert"];
+export type AccessLogInsert = Database["public"]["Tables"]["access_logs"]["Insert"];
 
-/** Base user profile */
-export interface UserProfile {
-  id: string;
-  email: string;
-  role: UserRole;
-  full_name: string;
-  avatar_url?: string;
+// App enums
+export type UserRole = "student" | "staff" | "security" | "admin" | "super_admin";
+export type PermitStatus = "active" | "expired" | "suspended" | "pending_approval";
+export type ScanDirection = "entry" | "exit";
+export type ScanMethod = "nfc" | "qr" | "manual";
+
+// NFC/QR payload types
+export interface GateTagPayload {
+  gateId: string;
+  lotId: string;
+  type: "entry" | "exit";
 }
 
-/** Parking session */
-export interface ParkingSession {
-  id: string;
-  driver_id: string;
-  guard_id: string;
-  vehicle_plate: string;
-  entry_time: string;
-  exit_time?: string;
-  status: SessionStatus;
-  qr_code: string;
-  created_at: string;
+export interface VehicleQRPayload {
+  vehicleId: string;
+  permitId: string;
+  timestamp: number;
+  hmac: string;
+}
+
+// Payment interface (stubbed)
+export interface PaymentResult {
+  paymentId: string;
+  status: "processing" | "paid" | "failed";
+  redirectUrl?: string;
+}
+
+export interface PaymentMetadata {
+  permitId: string;
+  lotId: string;
+  amount: number;
+  userId: string;
+}
+
+export interface PaymentProcessor {
+  createPayment(amount: number, metadata: PaymentMetadata): Promise<PaymentResult>;
+  getPaymentStatus(paymentId: string): Promise<PaymentResult["status"]>;
+  refundPayment(paymentId: string): Promise<{ success: boolean }>;
+}
+
+// Scan result for guard app
+export interface ScanResult {
+  vehicle: Vehicle | null;
+  permit: Permit | null;
+  isValid: boolean;
+  reason?: string;
+  direction: ScanDirection;
+  method: ScanMethod;
 }
