@@ -1,34 +1,26 @@
-import { appSchema, tableSchema } from "@nozbe/watermelondb";
+const DDL = `
+CREATE TABLE IF NOT EXISTS permits_cache (
+  permit_id TEXT PRIMARY KEY,
+  vehicle_id TEXT NOT NULL,
+  lot_id TEXT NOT NULL,
+  plate_number TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active',
+  expires_at INTEGER NOT NULL DEFAULT 0
+);
 
-export const schema = appSchema({
-  version: 2,
-  tables: [
-    tableSchema({
-      name: "permits_cache",
-      columns: [
-        { name: "permit_id", type: "string" },
-        { name: "vehicle_id", type: "string" },
-        { name: "lot_id", type: "string" },
-        { name: "plate_number", type: "string" },
-        { name: "status", type: "string" },
-        { name: "expires_at", type: "number" },
-      ],
-    }),
-    tableSchema({
-      name: "scan_queue",
-      columns: [
-        { name: "scan_id", type: "string" },
-        { name: "vehicle_id", type: "string" },
-        { name: "permit_id", type: "string", isOptional: true },
-        { name: "lot_id", type: "string" },
-        { name: "scanned_by", type: "string" },
-        { name: "direction", type: "string" },
-        { name: "method", type: "string" },
-        { name: "is_valid", type: "boolean" },
-        { name: "scanned_at", type: "number" },
-        { name: "synced", type: "boolean" },
-        { name: "retry_count", type: "number" },
-      ],
-    }),
-  ],
-});
+CREATE TABLE IF NOT EXISTS scan_queue (
+  scan_id TEXT PRIMARY KEY,
+  vehicle_id TEXT NOT NULL,
+  permit_id TEXT,
+  lot_id TEXT NOT NULL,
+  scanned_by TEXT NOT NULL,
+  direction TEXT NOT NULL,
+  method TEXT NOT NULL DEFAULT 'qr',
+  is_valid INTEGER NOT NULL DEFAULT 1,
+  scanned_at INTEGER NOT NULL,
+  synced INTEGER NOT NULL DEFAULT 0,
+  retry_count INTEGER NOT NULL DEFAULT 0
+);
+`;
+
+export const SCHEMA_SQL = DDL;

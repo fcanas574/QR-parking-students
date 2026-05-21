@@ -1,4 +1,17 @@
 import type { Database } from "./database";
+import type {
+  ScanDirection,
+  ScanMethod,
+} from "./database";
+
+// Re-export enum types from database
+export type {
+  UserRole,
+  PermitStatus,
+  ScanDirection,
+  ScanMethod,
+  PaymentStatus,
+} from "./database";
 
 // Row types from Supabase schema
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -12,12 +25,6 @@ export type LotOccupancy = Database["public"]["Tables"]["lot_occupancy"]["Row"];
 export type VehicleInsert = Database["public"]["Tables"]["vehicles"]["Insert"];
 export type PermitInsert = Database["public"]["Tables"]["permits"]["Insert"];
 export type AccessLogInsert = Database["public"]["Tables"]["access_logs"]["Insert"];
-
-// App enums
-export type UserRole = "student" | "staff" | "security" | "admin" | "super_admin";
-export type PermitStatus = "active" | "expired" | "suspended" | "pending_approval";
-export type ScanDirection = "entry" | "exit";
-export type ScanMethod = "nfc" | "qr" | "manual";
 
 // NFC/QR payload types
 export interface GateTagPayload {
